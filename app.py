@@ -7,9 +7,9 @@ import base64
 # Load environment variables
 load_dotenv()
 
-AZURE_ENDPOINT_KEY = os.environ['AZURE_ENDPOINT_KEY']
 AZURE_ENDPOINT_URL = os.environ['AZURE_ENDPOINT_URL']
-AZURE_MODEL_DEPLOYMENT = os.environ['AZURE_MODEL_DEPLOYMENT']
+AZURE_ENDPOINT_KEY = os.environ['AZURE_ENDPOINT_KEY']
+AZURE_MODEL_DEPLOYMENT = "" #os.environ['AZURE_MODEL_DEPLOYMENT']
 
 # Usage example
 url = AZURE_ENDPOINT_URL
@@ -32,12 +32,11 @@ def call_azure_ml_endpoint(url, api_key, data, deployment_name=None):
         'Authorization': 'Bearer ' + api_key
     }
 
-    if deployment_name:
-        headers['azureml-model-deployment'] = deployment_name
+    # if deployment_name:
+    #     headers['azureml-model-deployment'] = deployment_name
 
     try:
         response = requests.post(url, headers=headers, json=data, verify=False)
-
         response.raise_for_status()
 
         # Decode the JSON response to get a Python dictionary
@@ -48,7 +47,7 @@ def call_azure_ml_endpoint(url, api_key, data, deployment_name=None):
         error_message = {
             'status_code': error.response.status_code,
             'headers': error.response.headers,
-            'body': json.loads(error.response.content.decode('utf-8'))
+            'body': error.response.content
         }
         return error_message
 
@@ -70,10 +69,9 @@ async def on_chat_start():
 
 @cl.on_message
 async def on_message(message: cl.Message):
-    print(message)
     base64_data = None
+
     # ユーザーから画像がアップロードされている場合
-    
     images = [file for file in message.elements if "image" in file.mime]
     if images:
         # Base64 エンコードされたデータを取得
@@ -81,11 +79,15 @@ async def on_message(message: cl.Message):
 
     if base64_data:
         data ={
-            "topic": [message.content, base64_data]
+            "question": [message.content, "data:image/png;base64," + base64_data],
+            "chat_history": []
         }
-        #data = {"chat_history": [], 'question': message.content}
     else:
-        data = {"topic": [message.content]}
-        
+        data = {"question": [message.content], "chat_history": []}
+
     response = call_azure_ml_endpoint(url, api_key, data, deployment_name)
-    await cl.Message(content=response['result']).send()
+
+    if isinstance(response, dict) and 'answer' in response:
+        await cl.Message(content=response['answer']).send()
+    else:
+        await cl.Message(content=response).send()
