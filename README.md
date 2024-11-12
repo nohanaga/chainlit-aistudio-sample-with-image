@@ -1,4 +1,4 @@
-# chainlit-aistudio-sample
+# chainlit-aistudio-sample-with-image
 
 ## Install
 `pip install -r requirements.txt`
@@ -8,7 +8,7 @@ Open the `.env_exapmle` file and edit as follows. After editing, rename the file
 
 - AZURE_ENDPOINT_KEY=[*Primary Key*]
 - AZURE_ENDPOINT_URL=https://[*Deploy Name*].[*Region*].inference.ml.azure.com/score
-- AZURE_MODEL_DEPLOYMENT=[*Deploy Name*]
+
 
 ## Run Chainlit app
 `chainlit run app.py`
